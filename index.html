@@ -26,18 +26,9 @@
 </form>
 </section>
 
-<section class="dos-columnas" id="seccion-categorias">
+<section class="full-width" id="seccion-categorias">
 <h2>2. Selecciona categorías y opciones</h2>
-
-<div class="columna opciones-col">
-<h3 id="titulo-opciones">Selecciona una categoría</h3>
-<div id="lista-opciones" class="lista-opciones"></div>
-</div>
-
-<div class="columna categorias-col">
-<h3>Categorías</h3>
-<div id="lista-categorias" class="lista-categorias"></div>
-</div>
+<div id="lista-categorias-acordeon" class="lista-categorias-acordeon"></div>
 </section>
 
 <section class="full-width" id="seccion-cursos-personalizados">
@@ -67,14 +58,11 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // Estado
-let categoriaSeleccionada = null;
 let opcionesSeleccionadas = new Set();
 let cursosPersonales = new Set();
 
 // Elementos DOM
-const listaCategorias = document.getElementById('lista-categorias');
-const listaOpciones = document.getElementById('lista-opciones');
-const tituloOpciones = document.getElementById('titulo-opciones');
+const listaAcordeon = document.getElementById('lista-categorias-acordeon');
 const inputNuevoCurso = document.getElementById('nuevo-curso');
 const btnAgregar = document.getElementById('btn-agregar');
 const listaCursosSel = document.getElementById('lista-cursos-seleccionados');
@@ -83,48 +71,55 @@ const mensaje = document.getElementById('mensaje');
 const nombreInput = document.getElementById('nombre');
 const emailInput = document.getElementById('email');
 
-// Renderizar categorías
 function renderCategorias() {
-  listaCategorias.innerHTML = '';
+  listaAcordeon.innerHTML = '';
   CATEGORIAS.forEach(cat => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'cat-btn' + (categoriaSeleccionada === cat.id ? ' activo' : '');
-    btn.textContent = cat.nombre;
-    btn.onclick = () => seleccionarCategoria(cat.id);
-    listaCategorias.appendChild(btn);
+    const detalle = document.createElement('details');
+    detalle.className = 'categoria-detalle';
+
+    const resumen = document.createElement('summary');
+    resumen.className = 'categoria-summary';
+    resumen.innerHTML = `
+      <span class="categoria-nombre">${cat.nombre}</span>
+      <span class="categoria-contador">0 seleccionados</span>
+    `;
+
+    const contenedorOpciones = document.createElement('div');
+    contenedorOpciones.className = 'categoria-opciones';
+
+    cat.opciones.forEach(op => {
+      const label = document.createElement('label');
+      label.className = 'opcion-label';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.value = op;
+      checkbox.checked = opcionesSeleccionadas.has(op);
+      checkbox.onchange = () => {
+        if (checkbox.checked) opcionesSeleccionadas.add(op);
+        else opcionesSeleccionadas.delete(op);
+        actualizarContador(cat.id, resumen.querySelector('.categoria-contador'));
+      };
+      label.appendChild(checkbox);
+      label.appendChild(document.createTextNode(' ' + op));
+      contenedorOpciones.appendChild(label);
+    });
+
+    detalle.appendChild(resumen);
+    detalle.appendChild(contenedorOpciones);
+    listaAcordeon.appendChild(detalle);
+
+    actualizarContador(cat.id, resumen.querySelector('.categoria-contador'));
   });
 }
 
-function seleccionarCategoria(id) {
-  categoriaSeleccionada = id;
-  renderCategorias();
-  renderOpciones();
-}
-
-function renderOpciones() {
-  listaOpciones.innerHTML = '';
-  if (!categoriaSeleccionada) {
-    tituloOpciones.textContent = 'Selecciona una categoría';
-    return;
-  }
-  const cat = CATEGORIAS.find(c => c.id === categoriaSeleccionada);
-  tituloOpciones.textContent = `Opciones de: ${cat.nombre}`;
+function actualizarContador(catId, spanContador) {
+  const cat = CATEGORIAS.find(c => c.id === catId);
+  if (!cat || !spanContador) return;
+  let seleccionados = 0;
   cat.opciones.forEach(op => {
-    const label = document.createElement('label');
-    label.className = 'opcion-label';
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.value = op;
-    checkbox.checked = opcionesSeleccionadas.has(op);
-    checkbox.onchange = () => {
-      if (checkbox.checked) opcionesSeleccionadas.add(op);
-      else opcionesSeleccionadas.delete(op);
-    };
-    label.appendChild(checkbox);
-    label.appendChild(document.createTextNode(' ' + op));
-    listaOpciones.appendChild(label);
+    if (opcionesSeleccionadas.has(op)) seleccionados++;
   });
+  spanContador.textContent = `${seleccionados} seleccionados`;
 }
 
 function renderCursosPersonales() {
@@ -171,11 +166,15 @@ btnEnviar.onclick = async () => {
     mensaje.style.color = '#c00';
     return;
   }
-  if (!categoriaSeleccionada) {
-    mensaje.textContent = 'Selecciona al menos una categoría.';
+  if (opcionesSeleccionadas.size === 0) {
+    mensaje.textContent = 'Selecciona al menos una opción de curso.';
     mensaje.style.color = '#c00';
     return;
   }
+
+  const categoriasConSeleccion = CATEGORIAS.filter(cat =>
+    cat.opciones.some(op => opcionesSeleccionadas.has(op))
+  ).map(cat => cat.id);
 
   btnEnviar.disabled = true;
   btnEnviar.textContent = 'Enviando...';
@@ -184,7 +183,8 @@ btnEnviar.onclick = async () => {
     await addDoc(collection(db, 'respuestas'), {
       nombre,
       email,
-      categoria: categoriaSeleccionada,
+      categoria: categoriasConSeleccion[0] || null,
+      categorias: categoriasConSeleccion,
       opciones: Array.from(opcionesSeleccionadas),
       cursosPersonales: Array.from(cursosPersonales),
       fecha: serverTimestamp()
@@ -192,11 +192,9 @@ btnEnviar.onclick = async () => {
     mensaje.textContent = '¡Gracias! Tus datos se enviaron correctamente.';
     mensaje.style.color = '#080';
     document.getElementById('form-datos').reset();
-    categoriaSeleccionada = null;
     opcionesSeleccionadas.clear();
     cursosPersonales.clear();
     renderCategorias();
-    renderOpciones();
     renderCursosPersonales();
   } catch (error) {
     console.error(error);
@@ -210,7 +208,6 @@ btnEnviar.onclick = async () => {
 
 // Inicializar
 renderCategorias();
-renderOpciones();
 renderCursosPersonales();
 </script>
 
