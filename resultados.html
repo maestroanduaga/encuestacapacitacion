@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resultados de la Encuesta Docente</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+<h1>Resultados de la Encuesta Docente</h1>
+<p>Listado de cursos ordenado por número de votos (más votados primero).</p>
+<a href="index.html" class="btn-volver">← Volver al registro</a>
+</header>
+
+<main>
+<section class="full-width">
+<table id="tabla-resultados">
+<thead>
+<tr>
+<th>#</th>
+<th>Curso / Opción</th>
+<th>Categoría</th>
+<th>Votos</th>
+</tr>
+</thead>
+<tbody id="cuerpo-tabla"></tbody>
+</table>
+<p id="mensaje-vacio" style="display:none; text-align:center; color:#666;">Aún no hay respuestas registradas.</p>
+</section>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { firebaseConfig } from "./js/firebase-config.js";
+import { CATEGORIAS } from "./js/datos-categorias.js";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const cuerpoTabla = document.getElementById('cuerpo-tabla');
+const mensajeVacio = document.getElementById('mensaje-vacio');
+
+const mapaNombres = {};
+CATEGORIAS.forEach(cat => {
+  mapaNombres[cat.id] = cat.nombre;
+  cat.opciones.forEach(op => {
+    mapaNombres[op] = op;
+  });
+});
+
+async function cargarResultados() {
+  try {
+    const q = query(collection(db, 'respuestas'), orderBy('fecha', 'desc'));
+    const snapshot = await getDocs(q);
+
+    const conteo = {};
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const catId = data.categoria;
+      const catNombre = mapaNombres[catId] || catId;
+
+      // Contar opciones seleccionadas
+      (data.opciones || []).forEach(op => {
+        const clave = `${catNombre} › ${op}`;
+        conteo[clave] = (conteo[clave] || 0) + 1;
+      });
+
+      // Contar cursos personales
+      (data.cursosPersonales || []).forEach(curso => {
+        conteo[curso] = (conteo[curso] || 0) + 1;
+      });
+    });
+
+    const items = Object.entries(conteo)
+      .map(([nombre, votos]) => ({ nombre, votos }))
+      .sort((a, b) => b.votos - a.votos);
+
+    cuerpoTabla.innerHTML = '';
+    if (items.length === 0) {
+      mensajeVacio.style.display = 'block';
+      return;
+    }
+    mensajeVacio.style.display = 'none';
+
+    items.forEach((item, i) => {
+      const tr = document.createElement('tr');
+      let categoria = '';
+      let nombreCurso = item.nombre;
+
+      // Intentar extraer categoría si tiene formato "Cat › Opción"
+      if (item.nombre.includes(' › ')) {
+        const partes = item.nombre.split(' › ');
+        categoria = partes[0];
+        nombreCurso = partes[1];
+      }
+
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${nombreCurso}</td>
+        <td>${categoria}</td>
+        <td>${item.votos}</td>
+      `;
+      cuerpoTabla.appendChild(tr);
+    });
+  } catch (error) {
+    console.error(error);
+    cuerpoTabla.innerHTML = '<tr><td colspan="4">Error al cargar resultados.</td></tr>';
+  }
+}
+
+cargarResultados();
+</script>
+
+</body>
+</html>

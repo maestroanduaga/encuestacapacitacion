@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Capacitación Docente — Registro de Interés en Cursos</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+<h1>Capacitación Docente — Registro de Interés en Cursos</h1>
+<p>Indica tus datos y selecciona los cursos de capacitación que te interesen para tu formación docente.</p>
+</header>
+
+<main>
+
+<section class="full-width" id="seccion-datos">
+<h2>1. Datos personales</h2>
+<form id="form-datos">
+<label for="nombre">Nombre completo <span class="requerido">*</span></label>
+<input type="text" id="nombre" name="nombre" placeholder="Ej: Juan Pérez" required>
+
+<label for="email">Correo electrónico <span class="requerido">*</span></label>
+<input type="email" id="email" name="email" placeholder="ejemplo@correo.com" required>
+</form>
+</section>
+
+<section class="dos-columnas" id="seccion-categorias">
+<h2>2. Selecciona categorías y opciones</h2>
+
+<div class="columna">
+<h3>Categorías</h3>
+<div id="lista-categorias" class="lista-categorias"></div>
+</div>
+
+<div class="columna">
+<h3 id="titulo-opciones">Opciones</h3>
+<div id="lista-opciones" class="lista-opciones"></div>
+</div>
+</section>
+
+<section class="full-width" id="seccion-cursos-personalizados">
+<h2>3. Cursos adicionales (opcional)</h2>
+<div class="input-agregar">
+<input type="text" id="nuevo-curso" placeholder="Escribe el nombre de un curso y presiona Agregar">
+<button type="button" id="btn-agregar">Agregar</button>
+</div>
+<ul id="lista-cursos-seleccionados" class="lista-seleccionados"></ul>
+<p class="ayuda">Puedes agregar varios cursos y quitarlos con la X si cambias de opinión.</p>
+</section>
+
+<section class="full-width" id="seccion-enviar">
+<button type="button" id="btn-enviar">Enviar</button>
+<div id="mensaje"></div>
+</section>
+
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { firebaseConfig } from "./js/firebase-config.js";
+import { CATEGORIAS } from "./js/datos-categorias.js";
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+// Estado
+let categoriaSeleccionada = null;
+let opcionesSeleccionadas = new Set();
+let cursosPersonales = new Set();
+
+// Elementos DOM
+const listaCategorias = document.getElementById('lista-categorias');
+const listaOpciones = document.getElementById('lista-opciones');
+const tituloOpciones = document.getElementById('titulo-opciones');
+const inputNuevoCurso = document.getElementById('nuevo-curso');
+const btnAgregar = document.getElementById('btn-agregar');
+const listaCursosSel = document.getElementById('lista-cursos-seleccionados');
+const btnEnviar = document.getElementById('btn-enviar');
+const mensaje = document.getElementById('mensaje');
+const nombreInput = document.getElementById('nombre');
+const emailInput = document.getElementById('email');
+
+// Renderizar categorías
+function renderCategorias() {
+  listaCategorias.innerHTML = '';
+  CATEGORIAS.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cat-btn' + (categoriaSeleccionada === cat.id ? ' activo' : '');
+    btn.textContent = cat.nombre;
+    btn.onclick = () => seleccionarCategoria(cat.id);
+    listaCategorias.appendChild(btn);
+  });
+}
+
+function seleccionarCategoria(id) {
+  categoriaSeleccionada = id;
+  renderCategorias();
+  renderOpciones();
+}
+
+function renderOpciones() {
+  listaOpciones.innerHTML = '';
+  if (!categoriaSeleccionada) {
+    tituloOpciones.textContent = 'Selecciona una categoría';
+    return;
+  }
+  const cat = CATEGORIAS.find(c => c.id === categoriaSeleccionada);
+  tituloOpciones.textContent = `Opciones de: ${cat.nombre}`;
+  cat.opciones.forEach(op => {
+    const label = document.createElement('label');
+    label.className = 'opcion-label';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = op;
+    checkbox.checked = opcionesSeleccionadas.has(op);
+    checkbox.onchange = () => {
+      if (checkbox.checked) opcionesSeleccionadas.add(op);
+      else opcionesSeleccionadas.delete(op);
+    };
+    label.appendChild(checkbox);
+    label.appendChild(document.createTextNode(' ' + op));
+    listaOpciones.appendChild(label);
+  });
+}
+
+function renderCursosPersonales() {
+  listaCursosSel.innerHTML = '';
+  cursosPersonales.forEach(curso => {
+    const li = document.createElement('li');
+    li.className = 'curso-item';
+    li.textContent = curso;
+    const btnQuitar = document.createElement('button');
+    btnQuitar.type = 'button';
+    btnQuitar.className = 'quitar';
+    btnQuitar.textContent = '✕';
+    btnQuitar.onclick = () => {
+      cursosPersonales.delete(curso);
+      renderCursosPersonales();
+    };
+    li.appendChild(btnQuitar);
+    listaCursosSel.appendChild(li);
+  });
+}
+
+btnAgregar.onclick = () => {
+  const texto = inputNuevoCurso.value.trim();
+  if (!texto) return;
+  if (cursosPersonales.has(texto)) {
+    alert('Ese curso ya está en la lista.');
+    return;
+  }
+  cursosPersonales.add(texto);
+  inputNuevoCurso.value = '';
+  renderCursosPersonales();
+};
+
+inputNuevoCurso.addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') btnAgregar.click();
+});
+
+btnEnviar.onclick = async () => {
+  const nombre = nombreInput.value.trim();
+  const email = emailInput.value.trim();
+
+  if (!nombre || !email) {
+    mensaje.textContent = 'Por favor completa nombre y correo.';
+    mensaje.style.color = '#c00';
+    return;
+  }
+  if (!categoriaSeleccionada) {
+    mensaje.textContent = 'Selecciona al menos una categoría.';
+    mensaje.style.color = '#c00';
+    return;
+  }
+
+  btnEnviar.disabled = true;
+  btnEnviar.textContent = 'Enviando...';
+
+  try {
+    await addDoc(collection(db, 'respuestas'), {
+      nombre,
+      email,
+      categoria: categoriaSeleccionada,
+      opciones: Array.from(opcionesSeleccionadas),
+      cursosPersonales: Array.from(cursosPersonales),
+      fecha: serverTimestamp()
+    });
+    mensaje.textContent = '¡Gracias! Tus datos se enviaron correctamente.';
+    mensaje.style.color = '#080';
+    document.getElementById('form-datos').reset();
+    categoriaSeleccionada = null;
+    opcionesSeleccionadas.clear();
+    cursosPersonales.clear();
+    renderCategorias();
+    renderOpciones();
+    renderCursosPersonales();
+  } catch (error) {
+    console.error(error);
+    mensaje.textContent = 'Error al enviar. Intenta de nuevo.';
+    mensaje.style.color = '#c00';
+  } finally {
+    btnEnviar.disabled = false;
+    btnEnviar.textContent = 'Enviar';
+  }
+};
+
+// Inicializar
+renderCategorias();
+renderOpciones();
+renderCursosPersonales();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,274 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #fafafa;
+}
+
+header {
+  background: #1f4e79;
+  color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 25px;
+}
+
+header h1 {
+  margin: 0 0 8px 0;
+  font-size: 1.5rem;
+}
+
+header p {
+  margin: 0;
+  opacity: 0.9;
+}
+
+main {
+  background: #fff;
+  padding: 25px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+section {
+  margin-bottom: 30px;
+}
+
+section.full-width {
+  /* una sola columna a lo ancho */
+}
+
+section h2 {
+  border-bottom: 2px solid #1f4e79;
+  padding-bottom: 8px;
+  margin-top: 0;
+  font-size: 1.25rem;
+}
+
+.requerido {
+  color: #c00;
+}
+
+label {
+  display: block;
+  margin: 12px 0 5px 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+input[type="text"],
+input[type="email"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.dos-columnas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+}
+
+@media (max-width: 600px) {
+  .dos-columnas {
+    grid-template-columns: 1fr;
+  }
+}
+
+.columna h3 {
+  margin-top: 0;
+  font-size: 1.1rem;
+  color: #1f4e79;
+}
+
+.lista-categorias {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cat-btn {
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.cat-btn:hover {
+  border-color: #1f4e79;
+  background: #eef4fb;
+}
+
+.cat-btn.activo {
+  background: #1f4e79;
+  color: #fff;
+  border-color: #1f4e79;
+}
+
+.lista-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.opcion-label {
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.opcion-label input {
+  margin: 0;
+  width: auto;
+}
+
+/* Cursos personalizados */
+.input-agregar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.input-agregar input {
+  flex: 1;
+}
+
+.input-agregar button {
+  padding: 10px 18px;
+  background: #1f4e79;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.input-agregar button:hover {
+  background: #16406b;
+}
+
+.lista-seleccionados {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.curso-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff3cd;
+  border: 1px solid #ffd479;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.curso-item .quitar {
+  background: transparent;
+  border: none;
+  color: #c00;
+  font-size: 1.2rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.curso-item .quitar:hover {
+  color: #900;
+}
+
+.ayuda {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 6px;
+}
+
+/* Botón enviar */
+#seccion-enviar {
+  text-align: center;
+  margin-top: 10px;
+}
+
+#btn-enviar {
+  padding: 12px 30px;
+  font-size: 1rem;
+  background: #28a745;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#btn-enviar:hover {
+  background: #218838;
+}
+
+#btn-enviar:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+
+#mensaje {
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+/* Resultados */
+.btn-volver {
+  display: inline-block;
+  margin-bottom: 15px;
+  padding: 8px 16px;
+  background: #1f4e79;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.btn-volver:hover {
+  background: #16406b;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th, td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+th {
+  background: #1f4e79;
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+tr:nth-child(even) {
+  background: #f8f8f8;
+}
+
+tr:hover {
+  background: #f0f7ff;
+}
