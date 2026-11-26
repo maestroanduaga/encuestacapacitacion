@@ -29,6 +29,22 @@
 </table>
 <p id="mensaje-vacio" style="display:none; text-align:center; color:#666;">Aún no hay respuestas registradas.</p>
 </section>
+
+<section class="full-width" id="seccion-registrantes">
+<h2>Personas que respondieron la encuesta</h2>
+<table id="tabla-registrantes">
+<thead>
+<tr>
+<th>#</th>
+<th>Nombre</th>
+<th>Correo electrónico</th>
+<th>Fecha</th>
+</tr>
+</thead>
+<tbody id="cuerpo-registrantes"></tbody>
+</table>
+<p id="mensaje-registrantes-vacio" style="display:none; text-align:center; color:#666;">No hay registros aún.</p>
+</section>
 </main>
 
 <script type="module">
@@ -42,6 +58,8 @@ const db = getFirestore(app);
 
 const cuerpoTabla = document.getElementById('cuerpo-tabla');
 const mensajeVacio = document.getElementById('mensaje-vacio');
+const cuerpoRegistrantes = document.getElementById('cuerpo-registrantes');
+const mensajeRegistrantesVacio = document.getElementById('mensaje-registrantes-vacio');
 
 const mapaNombres = {};
 CATEGORIAS.forEach(cat => {
@@ -80,18 +98,21 @@ async function cargarResultados() {
       .sort((a, b) => b.votos - a.votos);
 
     cuerpoTabla.innerHTML = '';
+    cuerpoRegistrantes.innerHTML = '';
+
     if (items.length === 0) {
       mensajeVacio.style.display = 'block';
+      mensajeRegistrantesVacio.style.display = 'block';
       return;
     }
     mensajeVacio.style.display = 'none';
+    mensajeRegistrantesVacio.style.display = 'none';
 
     items.forEach((item, i) => {
       const tr = document.createElement('tr');
       let categoria = '';
       let nombreCurso = item.nombre;
 
-      // Intentar extraer categoría si tiene formato "Cat › Opción"
       if (item.nombre.includes(' › ')) {
         const partes = item.nombre.split(' › ');
         categoria = partes[0];
@@ -105,6 +126,20 @@ async function cargarResultados() {
         <td>${item.votos}</td>
       `;
       cuerpoTabla.appendChild(tr);
+    });
+
+    // Renderizar registrantes
+    snapshot.forEach((doc, i) => {
+      const data = doc.data();
+      const fecha = data.fecha ? new Date(data.fecha.seconds * 1000).toLocaleDateString('es-ES') : '';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${i + 1}</td>
+        <td>${data.nombre || ''}</td>
+        <td>${data.email || ''}</td>
+        <td>${fecha}</td>
+      `;
+      cuerpoRegistrantes.appendChild(tr);
     });
   } catch (error) {
     console.error(error);
